@@ -4,6 +4,8 @@ By: Priscilla Chan & Vincent Tran
 '''
 import os
 import sys
+import re
+import nltk
 
 
 class InvertedIndex:
@@ -13,6 +15,7 @@ class InvertedIndex:
         self.files = []
 
     
+    #extracts all the files from a given directory
     def getData(self, path: 'directory path'):
         for root, dirs, files in os.walk(path):
             for name in files:
@@ -23,8 +26,14 @@ class InvertedIndex:
         pass 
 
 
+    #tokenizer from assignment 1, might modify later
     def tokenize(self, content) -> list:
-        pass 
+        tokens = []
+        for line in content:
+            line = line.strip().lower()
+            words = re.findall("[\w]+", line, flags=re.ASCII)
+            tokens.extend(words)
+        return tokens 
 
 
     def stem(self, token) -> str:
