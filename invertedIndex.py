@@ -5,7 +5,7 @@ By: Priscilla Chan & Vincent Tran
 import os
 import sys
 import re
-import nltk
+from nltk.stem.porter import PorterStemmer
 import json
 from bs4 import BeautifulSoup
 
@@ -42,7 +42,13 @@ class InvertedIndex:
         return tokens 
 
 
-    def stem(self, token) -> str:
+    #Uses porter stemmer to normalize tokens
+    def stem(self, tokens:list) -> list:
+        stemmer = PorterStemmer()
+        return [stemmer.stem(token) for token in tokens]
+
+
+    def parse_html(self):
         pass
 
 
