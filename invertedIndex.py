@@ -12,12 +12,9 @@ from bs4 import BeautifulSoup
 
 class InvertedIndex:
 
-    docID = 0
-
     def __init__(self):
         self.db = {}
         self.files = []
-        self.docID += 1
 
     
     #extracts all the files from a given directory
@@ -58,8 +55,30 @@ class InvertedIndex:
         return soup.get_text()
 
 
+    #adds files to database
     def add_to_db(self):
-        pass 
+        tempList = []
+        for file in self.files:
+            name =  self.parse_json(file)[0] 
+            content = self.parse_json(file)[1] 
+            text = self.parse_html(content) 
+            tokens = self.stem(self.tokenize(text))
+            for token in sorted(tokens):
+                tempList.append((token, name))
+        for token, name in tempList:
+            if token in self.db.keys():
+                posting = self.db.get(token)[1]
+                if name not in posting:
+                    posting.append(name)
+                self.db[token] = [len(posting), posting]
+            else:
+                self.db[token] = [1, [name]]
+
+
+    def get_db(self):
+        return self.db
+
+
 
 
 
@@ -69,8 +88,6 @@ if __name__ == '__main__':
     path = sys.argv[1] 
     #gets all files in listed path
     i.getData(path)
-    #test html parser and tokenizer
-    content = i.parse_json(i.files[0])[1] 
-    text = i.parse_html(content)
-    print(i.tokenize(text))
+    i.add_to_db()
+    print(i.get_db())
     
