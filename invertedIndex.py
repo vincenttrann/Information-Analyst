@@ -12,10 +12,12 @@ from bs4 import BeautifulSoup
 
 class InvertedIndex:
 
+    docID = 0
+
     def __init__(self):
         self.db = {}
         self.files = []
-        self.doc_id = 1
+        self.docID += 1
 
     
     #extracts all the files from a given directory
