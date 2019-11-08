@@ -89,5 +89,8 @@ if __name__ == '__main__':
     #gets all files in listed path
     i.getData(path)
     i.add_to_db()
-    print(i.get_db())
+    with open("index.txt", "w", encoding="utf-8") as file:
+        for token, posting in i.get_db().items():
+            file.write(str(token)+": "+str(posting[0])+" -> "+str(posting[1])+"\n")
+
     
