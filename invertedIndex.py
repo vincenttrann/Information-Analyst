@@ -37,7 +37,7 @@ class InvertedIndex:
     #tokenizer from assignment 1, might modify later
     def tokenize(self, content) -> list:
         tokens = []
-        for line in content:
+        for line in content.split("\n"):
             line = line.strip().lower()
             words = re.findall("[\w]+", line, flags=re.ASCII)
             tokens.extend(words)
@@ -50,8 +50,12 @@ class InvertedIndex:
         return [stemmer.stem(token) for token in tokens]
 
 
-    def parse_html(self):
-        pass
+    #parse the html provided in content section of json file
+    #for now, just retreiving all the text 
+    #will deal with titles/headers/bold text later
+    def parse_html(self, html_doc:str) -> str:
+        soup = BeautifulSoup(html_doc, 'html.parser')
+        return soup.get_text()
 
 
     def add_to_db(self):
@@ -63,5 +67,10 @@ class InvertedIndex:
 if __name__ == '__main__':
     i = InvertedIndex() 
     path = sys.argv[1] 
+    #gets all files in listed path
     i.getData(path)
+    #test html parser and tokenizer
+    content = i.parse_json(i.files[0])[1] 
+    text = i.parse_html(content)
+    print(i.tokenize(text))
     
