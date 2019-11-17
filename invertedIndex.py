@@ -8,14 +8,24 @@ import re
 from nltk.stem.porter import PorterStemmer
 import json
 from bs4 import BeautifulSoup
+from collections import defaultdict
+import pickle
+
+
+class Posting:
+
+    def __init__(self, doc_id, tf_idf, fields):
+        self.doc_id = doc_id 
+        self.tf_idf = tf_idf
+        self.fields = fields
 
 
 class InvertedIndex:
 
     def __init__(self):
-        self.db = {}
+        self.db = defaultdict(list)
         self.files = []
-        self.doc_id = 1
+        self.doc_id = 0
 
     
     #extracts all the files from a given directory
@@ -51,33 +61,35 @@ class InvertedIndex:
     #parse the html provided in content section of json file
     #for now, just retreiving all the text 
     #will deal with titles/headers/bold text later
-    def parse_html(self, html_doc:str) -> str:
-        soup = BeautifulSoup(html_doc, 'html.parser')
-        return soup.get_text()
+    def parse_html(self, html_doc:str) -> dict:
+        soup = BeautifulSoup(html_doc, 'html.parser') 
+        token_dict = defaultdict(set)
+        token_dict['all_text'] = soup.get_text()
+        for item in soup.find_all():
+            tokens = self.stem(self.tokenize(item.text))
+            for token in sorted(set(tokens)):
+                if item.name == 'title' or item.name == 'body' \
+                    or re.match('^h[1-6]$',item.name) or item.name == 'b':
+                    token_dict[token].add(item.name)
+        return token_dict
 
 
     #adds files to database
     def add_to_db(self):
-        tempList = []
         with open("doc_id.txt", "w", encoding="utf-8") as f:
             for file in self.files:
+                self.doc_id+=1
                 doc_id =  self.doc_id 
                 name = self.parse_json(file)[0]
                 content = self.parse_json(file)[1] 
-                text = self.parse_html(content) 
-                tokens = self.stem(self.tokenize(text))
+                html_doc = self.parse_html(content)['all_text']
+                fields_dict = self.parse_html(content)
+                tokens = self.stem(self.tokenize(html_doc)) 
                 f.write(str(doc_id)+" "+str(name)+"\n")
-                for token in sorted(tokens):
-                    tempList.append((token, doc_id))
-                self.doc_id+=1
-        for token, doc_id in tempList:
-            if token in self.db.keys():
-                posting = self.db.get(token)[1]
-                if doc_id not in posting:
-                    posting.append(doc_id)
-                self.db[token] = [len(posting), posting]
-            else:
-                self.db[token] = [1, [doc_id]]
+                for token in tokens:
+                    count = tokens.count(token) 
+                    fields = list(fields_dict[token])
+                    self.db[token].append(Posting(doc_id, count, fields))
 
 
     def get_db(self):
@@ -85,18 +97,14 @@ class InvertedIndex:
 
 
 
-
-
-
 if __name__ == '__main__':
     i = InvertedIndex() 
     path = sys.argv[1] 
-    #gets all files in listed path
     i.getData(path)
     i.add_to_db()
-    print(i.doc_id)
-    #with open("index.txt", "w", encoding="utf-8") as file:
-        #for token, posting in i.get_db().items():
-            #file.write(str(token)+": "+str(posting[0])+" -> "+str(posting[1])+"\n")
+    db = i.get_db() 
+    pickle.dump(db, open( "index.p", "wb" ))
+    print("Done!")
+    
 
     
