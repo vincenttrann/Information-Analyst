@@ -10,6 +10,7 @@ import json
 from bs4 import BeautifulSoup
 from collections import defaultdict
 import pickle
+import math 
 
 
 class Posting:
@@ -20,8 +21,10 @@ class Posting:
         self.fields = fields
 
 
-    def update_idf(self, tf, idf):
-        pass
+    def update_tf_idf(self, df):
+        idf = math.log10(1988/df) 
+        w = (1+math.log10(self.tf_idf)) * idf
+        self.tf_idf = w
 
 
 class InvertedIndex:
@@ -30,6 +33,7 @@ class InvertedIndex:
         self.db = defaultdict(list)
         self.files = []
         self.doc_id = 0
+        self.id_dict = {}
 
     
     #extracts all the files from a given directory
@@ -83,24 +87,27 @@ class InvertedIndex:
 
     #adds files to database
     def add_to_db(self):
-        with open("doc_id.txt", "w", encoding="utf-8") as f:
-            for file in self.files:
-                self.doc_id+=1
-                doc_id =  self.doc_id 
-                name = self.parse_json(file)[0]
-                content = self.parse_json(file)[1] 
-                html_doc = self.get_text(content)
-                tokens = self.stem(self.tokenize(html_doc))
-                fields_dict = self.parse_html(content, tokens) 
-                f.write(str(doc_id)+" "+str(name)+"\n")
-                for token in sorted(set(tokens)):
-                    count = tokens.count(token) 
-                    fields = list(fields_dict[token])
-                    self.db[token].append(Posting(doc_id, count, fields))
+        for file in self.files:
+            self.doc_id+=1
+            doc_id =  self.doc_id 
+            name = self.parse_json(file)[0]
+            content = self.parse_json(file)[1] 
+            html_doc = self.get_text(content)
+            tokens = self.stem(self.tokenize(html_doc))
+            fields_dict = self.parse_html(content, tokens) 
+            self.id_dict[doc_id] = name 
+            for token in sorted(set(tokens)):
+                count = tokens.count(token) 
+                fields = list(fields_dict[token])
+                self.db[token].append(Posting(doc_id, count, fields))
 
 
     def get_db(self):
         return self.db
+
+
+    def get_ids(self):
+        return self.id_dict
 
 
 
@@ -109,9 +116,18 @@ if __name__ == '__main__':
     path = sys.argv[1] 
     i.getData(path)
     i.add_to_db()
-    db = i.get_db() 
+    for pList in i.get_db().values():
+        for posting in pList:
+            df = len(pList) 
+            posting.update_tf_idf(df) 
+    db = i.get_db()
     with open('index.pkl', 'wb') as f:
         pickle.dump(db, f)
+    f.close()
+    ids = i.get_ids()
+    with open('doc_id.pkl', 'wb') as f2:
+        pickle.dump(ids, f2) 
+    f2.close()
     print("Done!")
     
 
