@@ -4,58 +4,73 @@ By: Priscilla Chan & Vincent Tran
 '''
 import pickle
 import os
-from index import Posting
+from index import InvertedIndex, Posting
+from nltk.stem.porter import PorterStemmer
 
 
 class Search:
 
-    def __init__(self, db):
+    def __init__(self, db, id_file):
         self.db = db 
+        self.id_file = id_file
 
     
-    def process_query(self, query):
-        queryList = query.split()
-        if "AND" in queryList:
-            pass 
-        return
+    def process_query(self, query:str) -> list:
+        queryList = query.split("AND")
+        stemmer = PorterStemmer() 
+        tokens = [stemmer.stem(term.strip()) for term in queryList]
+        return tokens
 
 
-    def merge(self, p1, p2):
-        answer = [] 
-        post = self.longer(p1, p2) 
-        for p in post: 
-            if p1.doc_id == p2.doc_id:
-                answer.append(p1.doc_id) 
-            elif p1.doc_id < p2.doc_id:
-                continue 
-            else:
-                continue 
-        return answer
+    def merge(self, p1:list, p2:list) -> list:
+        docid_1 = [p.doc_id for p in p1]
+        return [posting for posting in p2 if posting.doc_id in docid_1]
 
 
-    def longer(self, p1, p2):
-        if p1.length > p2.length:
-            return p1 
-        else:
-            return p2 
+    def get_results(self, query:list) -> list:
+        postings = [self.db.get(term) for term in query] 
+        postings.sort(key=len)
+        if len(query) > 1:
+            intersect = self.merge(postings[0], postings[1])
+            for i in range(2, len(postings)):
+                intersect = self.merge(intersect, postings[i])
+            return intersect
+        return postings[0]
 
 
-    def get_results(self):
-        pass 
+    def display_results(self, urls:list):
+        for i in range(5):
+            print(urls[i]+"\n")
 
 
-    def display_results(self):
-        pass
+    def get_urls(self, postings: list):
+        urls = []
+        for posting in postings:
+            urls.append(self.id_file[posting.doc_id])
+        return urls
+
+
+    def rank(self, postings:list) -> list:
+        return sorted(postings, key=(lambda x: x.tf_idf), reverse=True)
 
 
 
 if __name__ == '__main__':
+    f1 = open('index.pkl', 'rb')
+    db = pickle.load(f1)
+    f2 = open('doc_id.pkl', 'rb') 
+    ids = pickle.load(f2)
     while True:
         query = input('What would you like to search? (Enter q to quit)\n') 
         if query == 'q':
+            f1.close() 
+            f2.close()
             break 
         else:
-            db = open('index.pkl', 'rb')
-            pickle.load(db)
-            s = Search(db)
+            s = Search(db, ids)
+            terms = s.process_query(str(query)) 
+            results = s.get_results(terms) 
+            rank = s.rank(results)
+            urls = s.get_urls(rank) 
+            s.display_results(urls) 
 
