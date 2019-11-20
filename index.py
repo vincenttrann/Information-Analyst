@@ -15,10 +15,11 @@ import math
 
 class Posting:
 
-    def __init__(self, doc_id, tf_idf, fields):
+    def __init__(self, doc_id, tf, fields):
         self.doc_id = doc_id 
-        self.tf_idf = tf_idf
+        self.tf = tf
         self.fields = fields
+        self.tf_idf = 0
 
 
     def update_tf_idf(self, df):
@@ -118,7 +119,7 @@ if __name__ == '__main__':
     i.add_to_db()
     for pList in i.get_db().values():
         for posting in pList:
-            df = len(pList) 
+            df = len(pList)
             posting.update_tf_idf(df) 
     db = i.get_db()
     with open('index.pkl', 'wb') as f:
