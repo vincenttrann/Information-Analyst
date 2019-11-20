@@ -6,6 +6,9 @@ import pickle
 import os
 from index import InvertedIndex, Posting
 from nltk.stem.porter import PorterStemmer
+from urllib.parse import urldefrag
+from numpy import dot
+from numpy.linalg import norm
 
 
 class Search:
@@ -18,7 +21,7 @@ class Search:
     def process_query(self, query:str) -> list:
         queryList = query.split("AND")
         stemmer = PorterStemmer() 
-        tokens = [stemmer.stem(term.strip()) for term in queryList]
+        tokens = [stemmer.stem(term.strip().lower()) for term in queryList]
         return tokens
 
 
@@ -46,11 +49,14 @@ class Search:
     def get_urls(self, postings: list):
         urls = []
         for posting in postings:
-            urls.append(self.id_file[posting.doc_id])
+            defraged = urldefrag(self.id_file[posting.doc_id])[0]
+            if defraged not in urls:
+                urls.append(defraged)
         return urls
 
 
     def rank(self, postings:list) -> list:
+        score = 0
         return sorted(postings, key=(lambda x: x.tf_idf), reverse=True)
 
 
