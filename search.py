@@ -57,7 +57,12 @@ class Search:
 
     def rank(self, postings:list) -> list:
         score = 0
-        return sorted(postings, key=(lambda x: x.tf_idf), reverse=True)
+        sorted(postings, key=(lambda x: x.tf_idf), reverse=True)
+        return 
+
+
+    def cosine_similarity(self, query, postings):
+        pass 
 
 
 

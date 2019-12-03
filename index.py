@@ -11,6 +11,7 @@ from bs4 import BeautifulSoup
 from collections import defaultdict
 import pickle
 import math 
+from urllib.parse import urldefrag
 
 
 class Posting:
@@ -20,12 +21,17 @@ class Posting:
         self.tf = tf
         self.fields = fields
         self.tf_idf = 0
+        self.doc_length = 0
 
 
     def update_tf_idf(self, df):
         idf = math.log10(1988/df) 
-        w = (1+math.log10(self.tf_idf)) * idf
+        w = (1+math.log10(self.tf)) * idf
         self.tf_idf = w
+
+    
+    def set_doc_length(self, length):
+        self.doc_length = length
 
 
 class InvertedIndex:
@@ -92,11 +98,13 @@ class InvertedIndex:
             self.doc_id+=1
             doc_id =  self.doc_id 
             name = self.parse_json(file)[0]
+            name = urldefrag(name)[0]
             content = self.parse_json(file)[1] 
             html_doc = self.get_text(content)
             tokens = self.stem(self.tokenize(html_doc))
             fields_dict = self.parse_html(content, tokens) 
-            self.id_dict[doc_id] = name 
+            if name not in self.id_dict.values():
+                self.id_dict[doc_id] = name 
             for token in sorted(set(tokens)):
                 count = tokens.count(token) 
                 fields = list(fields_dict[token])
@@ -117,10 +125,16 @@ if __name__ == '__main__':
     path = sys.argv[1] 
     i.getData(path)
     i.add_to_db()
+    length_dict = defaultdict(list)
     for pList in i.get_db().values():
         for posting in pList:
             df = len(pList)
             posting.update_tf_idf(df) 
+            length_dict[posting.doc_id].append(posting.tf_idf)
+    for pList in i.get_db().values():
+        for posting in pList:
+            pID = posting.doc_id 
+            posting.set_doc_length(math.sqrt(sum(length_dict[pID])))
     db = i.get_db()
     with open('index.pkl', 'wb') as f:
         pickle.dump(db, f)
@@ -130,6 +144,8 @@ if __name__ == '__main__':
         pickle.dump(ids, f2) 
     f2.close()
     print("Done!")
+
+
     
 
     
