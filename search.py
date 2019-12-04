@@ -9,6 +9,7 @@ from nltk.stem.porter import PorterStemmer
 from urllib.parse import urldefrag
 from numpy import dot
 from numpy.linalg import norm
+import math
 
 
 class Search:
@@ -57,12 +58,26 @@ class Search:
 
     def rank(self, postings:list) -> list:
         score = 0
-        sorted(postings, key=(lambda x: x.tf_idf), reverse=True)
-        return 
+        return sorted(postings, key=(lambda x: x.tf_idf), reverse=True)
+
 
 
     def cosine_similarity(self, query, postings):
-        pass 
+        # represent queries as vectors in the space
+        # rank documents according to their proximity to the query in this space
+        scores = []
+        lengths = []
+        for term in query:
+            weight_term_query = math.log10(query.count(term)) * math.log10(1988/len(postings))
+            for posting in postings:
+                tf_idf = posting.tf_idf
+                scores.append(weight_term_query*tf_idf)
+                lengths.append(posting.doc_length)
+        for d in lengths:
+            pass
+
+
+
 
 
 
